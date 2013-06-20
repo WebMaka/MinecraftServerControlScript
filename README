@@ -1,0 +1,179 @@
+Minecraft Server Control Script
+-----------------------------------------------------------------------------
+Originally posted by sandain on the Minecraft Forums on 9 Mar 2013. 
+Modified extensively by WebMaka (general@actiumgaming.com), et al
+
+Forum thread:
+http://www.minecraftforum.net/topic/121830-multi-world-linux-minecraft-server-control-script/
+
+
+Installing:
+
+1. Upload this script and template.conf to a Linux server.
+2. Pop open a terminal and paste/run these lines, one at a time:
+     sudo cp minecraft_server /etc/init.d/minecraft_server
+     sudo chmod 755 /etc/init.d/minecraft_server
+     sudo update-rc.d minecraft_server defaults
+     sudo adduser minecraft
+   NOTE: Obviously you'll need root for this, and when doing the adduser line leave everything
+   blank but the password - give the new user a properly strong password.
+3. Be sure to chown the script file in /etc/init.d to the user "minecraft" (or whatever you
+   change the user to) so that it can be invoked properly.
+4. Edit worlds.conf to add world names (essentially names for each server instance), ports, and
+   optionally IP addresses, for each server instance you want to run on the machine.
+5. Copy template.conf and rename a copy to <world>.conf for each world entry in worlds.conf.
+6. Edit the <world>.conf files as needed. MAKE SURE YOU SAVE EVERYTHING USING UNIX NEW-LINE
+   CONVENTIONS. Windows uses CRLFs but *NIX only uses linefeeds, and if you save this script
+   and/or any <world>.conf file using Windows CRLFs the script WILL crash and/or not work properly.
+7. Start each server with "/etc/init.d/minecraft_server watchstart <world>" and monitor to ensure
+   everything works as desired. if all went well, great! if not, well, fix as required. ;-)
+8. Edit the <world>.conf files again if necessary/desired to optimize Java start parameters, improve
+   performance, etc.
+
+
+Commands:
+
+NOTE: When [<world>] is the parameter, the command will work on/for the server for the given <world>,
+or all Configured servers if no world is specified. Nevertheless, a few commands are world-specific.
+
+> start [<world>]: Start the server for instance <world>, or start all server instances.
+> watchstart <world>: Start the server, and switch to its screen to see the startup process in real time.
+> stop [<world>]: Stop the server.
+> force-stop [<world>]: Kill the server's running process.
+> restart [<world>]: Stop and restart the server.
+> force-restart [<world>]: Kill the server's running process and restart the server.
+> scheduled-restart <world>: Stop and restart the server, giving warnings as far as 10 minutes in 
+   advance. (Intended to be cronned.)
+> powercycle [<world>]: Stop, back up, and restart the server. (NOTE: Backs up only the world files - 
+   essentially this combines "restart" and "backup".
+> status [<world>]: View the server's current status (running or not), and player count if applciable.
+> sync [<world>]: Sync the server's world files to the . files on disk if mirroring is enabled.
+> send <world> <command>: Send a single <command> to the server. Anything sent as <command> is 
+   essentially run as a console command, so use with caution.
+> screen <world>: Switch to the server's screen.
+> watch <world>: Monitor the server by watching for server log changes. This basically only displays 
+   major events - use "screen" to watch minor events, mod messages, and debugging information.
+> logrotate [<world>]: Rotate the server's log files.
+> savetodisk [<world>]: Flush all pending world updates to disk - includes "sync" functionality if
+   mirroring is enabled.
+> backup [<world>]: Back up the server's world files. NOTE: This can take several minutes and can slowly 
+   consume a lot of disk space over time.
+> fullbackup [<world>]: Back up the entire server. NOTE: This can take half an hour or more and will eat
+   a lot of disk space.
+> map [<world>]: Redo the Overviewer map for the server, if Overviewer is installed.
+
+
+Suggestions:
+
+- Once you're sure a newly added server is working properly, use the "fullbackup" command with
+  tarball creation enabled to create an easy-to-reinstall copy in case something blows up.
+- Add a cron task to run the "savetodisk" command on regular intervals. 15-30 minutes is good for
+  non-mirrored servers, but go with 5-10 minute intervals for mirrored so data loss risks are
+  reduced.
+- Add a cron task to run the "backup" command on regular intervals to archive each server's world
+  files. 6-24 hours is about right, but beware of disk space usage if you enable tarball creation
+  and have a short interval; 6-hour backup intervals can make a terabyte of space vanish in a
+  month unless you change the BACKUP_DURATION value to something reasonable!
+- For really mod-heavy servers (e.g., Tekkit, Feed the Beast) it might not be a bad idea to add a
+  cron task to run the "scheduled-restart" command to stop and restart the server. This is a good
+  idea because large amounts of mods can make Java leak so much memory it becomes slow and unstable
+  after a couple days. Usually, restarting such servers once a day during the lowest-traffic part
+  of the day is fine.
+
+
+Change Log:
+
+- fix the detection of required programs.  Error messages should now display correctly 
+  if a program is found to be missing.
+- fix the permissions for the screen tty using Montoya's patch.
+- Add the logrotate command to the script for rotating the log file using a modified version 
+  of Zanix's patch.
+- Search the world folder for an overviewer-settings.py file for custom mapping settings for 
+  the world using Zanix's patch.
+- Use the update infrastructure to manage the Minecraft client download using Zanix's patch.
+- Catch banned players logging off of the server using Zanix's patch.
+- Add support for Minecraft Overviewer and drop support for c10t and Pigmap.
+- Remove support for mcsuperserver.py, it is buggy and does not have an update for Minecraft 1.4.
+- Remove support for user and admin commands.  They no longer work with Minecraft 1.4.
+- Use Paul Andreassen's mcsuperserver.py to launch servers on demand as recommend by Culfri.
+- Add support for the Pigmap mapping software.
+- Added Zanix's backup patch.
+- Add a more descriptive error for when the server fails to start.
+- fix an issue with wget not being able to download CraftBukkit at its current address (was 
+  breaking on the &).
+- Once again update the CraftBukkit download location to point to their latest release.
+- Add a separate variable for admin level user commands, but just give them access to the motd for now.
+- Recognise admins attempting to run a command.
+- Update the CraftBukkit download location to point to their latest stable build (fixes 1.0).
+- Add an IP address field to the worlds.conf file, blank by default.
+- Add the option to utilize a mirror image of a world for use in ramdisk CONFIGurations.
+- Modify init info to include support for chkCONFIG.
+- Add a lock file when running under RedHat/CentOS to fix shutdown issues (found by swallowtail23).
+- Display a message prior to displaying a world's screen about how to exit that screen.
+- fix a bug in detecting the process ID of Screen when there are very similar world names (found by 
+  Tachdelan).
+- fix mapping of the Nether when using CraftBukkit.
+- Update the CraftBukkit download location to point to their latest stable build (fixes beta 1.8).
+- Simplify the server type selection code as suggest by hexparrot.
+- Verify the download of c10t.
+- Add /help and /motd user commands.
+- Follow symbolic links when creating tar archives during a full backup.
+- Make the auto restart on SEVERE server event optional.
+- Simplify the Nether detection method, fixing the mapping of the Nether in 1.6.
+- Print a message if running the script as the wrong user.
+- Add current version detection for c10t download.
+- fix c10t download.
+- Add support for CraftBukkit.
+- Add an option to connect to the Screen holding the world's console.
+- Restart the server when a SEVERE server event is caught.
+- fix mapping of Nether worlds with c10t.ftb_ultimate
+- Allow spaces in addition to tabs in the worlds.conf file.
+- Allow the script to run from a user account.
+- Add the watch command line option to allow the server admin to watch the log file.
+- Add options to route lib-notify output to the correct user and display.
+- Make sure the server.log file exists prior to starting the log processor.
+- Allow comments in the worlds.conf file.
+- Be more verbose when doing updates to the server software.
+- Add a Message of the Day (MOTD) that is whispered to users when they log on.
+- fix lib-notify output.
+- Remove the time from backup files, instead use a counter for multiple backups in the same day.  This 
+  should fix issues with file systems that don't like using a colon in the filename.
+- Output the number of online users when the scripts status command is given.
+- fix 32/64 bit detection (used for updating c10t).
+- Add initial log processing.  Keep track of users logging in and out.
+- Make the script use the same world names as Minecraft.
+- Add error checking to calls to wget and screen.
+- Add backup duration variable and logic.  Backups older than X days are now removed when new 
+  backups are created.
+- Directories are now created properly when maps are first created with c10t.
+- Add send option, to send a command to the world server.
+- Add an infrastructure for updating addons, and add c10t to the update routine.
+- Add force-stop and force-restart options to kill a world server process after attempting a clean
+  shutdown.  This will allow admins to stop locked servers more easily.
+
+Changes made by WebMaka during May-June 2013:
+- Changed the launch code to place server-centric CONFIGurations in separate files for each 
+  instance. This permits the script to manage multiple servers with different jar files and
+  their own special sets of Java startup parameters.
+- Added sanity checking and autocreate-if-missing for world CONFIGuration files.
+- Modified the mirroring code to mirror world files only, auto-creating and removing symlinks
+  and remaning the original world file directory as needed.
+- Re-added tarball creation to the script's backup options. When enabled, the script can back 
+  up the world files or whole server instance to a .tar.gz archive file. This can be used in 
+  conjunction with rdiff-backup to provide both incremental mirrored backups AND downloadable,
+  offsite-storable archives.
+- Made script responses more verbose/useful, and added some basic formatting to them. Piping
+  script execution results to text files for later examination can actually be useful now.
+- Added "powercycle" command, which combines "restart" and "backup" to stop the server, back up its
+  world files, and then restart the server.
+- Added "scheduled-restart" command, which is basically "restart" with warnings at 10 and 5 minutes
+  before shutdown as well as 60, 30, 15, 10, and 5 seconds before. This command is intended to be 
+  "cronned" to auto-restart servers on a regular basis when they require it in order to maintain
+  stability.
+- Added "watchstart" command, which combines "start" with "screen" to start the server and jump right
+  into its startup process. Wonderful for seeing what's doing what during startup.
+- Added "savetodisk" command, which expands on the "sync" command to save pending world file updates
+  to disk, including mirrored world files which are then copied to disk.
+- Edited all server stop/restart commands to give warnings at 60, 30, 15, 10, and 5 seconds before 
+  dropping the server. Gives more time for players to panic and complain before the server stops. ;-)
+- Cleaned up a lot of the comment text, revamped descriptions, etc. to make things a bit clearer.

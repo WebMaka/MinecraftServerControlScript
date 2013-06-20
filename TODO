@@ -1,0 +1,16 @@
+Minecraft Server Control Script
+-----------------------------------------------------------------------------
+
+The dreaded to-do list...
+
+1. Solicit some folks to beat on this script and flesh out any errors, bugs, 
+   misbehaviour, etc. (WebMaka's server setup won't be the only hard/software
+   combo out there, so what works for him might not work well or at all for 
+   anyone else.)
+   
+2. Build a workable web administration system that can call this script. It'll
+   need to be able to reach the script in /etc/init.d from the Apache user
+   (usually www-data), and obviously it'll have to reach into the server(s)
+   (itself|themselves) to do things like show a list of players, show the server
+   log' contents, etc. (This will probably need to be handled through the script
+   so that everything's kept concise interface-wise.)
